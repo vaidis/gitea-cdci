@@ -1,0 +1,12 @@
+[Unit]
+Description=Gitea CD/CI
+Requires=network-online.target
+After=default.target
+ 
+[Service]
+ExecStart=/usr/bin/node index.js
+WorkingDirectory=/opt/gitea
+User=root
+ 
+[Install]
+WantedBy=default.target

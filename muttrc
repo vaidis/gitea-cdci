@@ -1,0 +1,10 @@
+# need to change
+set from="My own email <myemail@mydomain.me>"
+set realname = "My Real Name"
+set my_user="myemail@mydomain.me"
+set my_pass="ABDC1234"
+
+# no need to change
+set ssl_starttls=yes
+set ssl_force_tls=yes
+set smtp_url = "smtp://$my_user:$my_pass@smtp.zoho.eu:587"
