@@ -37,7 +37,7 @@ Go to `https://example/admin/system-hooks/gitea/new` and create a **System Webho
 Target URL        : http://192.168.1.110/webhook
 HTTP Method       : POST
 POST Content Type : application/json
-Trigger On        : Custom Events > Push
+Trigger On        : All Events
 Active            : Enable
 ```
 
