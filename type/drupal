@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Data from Gitea
+EVENT=$1
+NAME=$2
+TYPE=$3
+REPO=$4
+MAIL=$5
+USER=$6
+
+# Next available tcp port
+PORTS_USED=$(netstat -tulpn | more +3 | awk {'print $4'} | awk -F: {'print $2'} | sed '/^$/d' | uniq | sort -n | grep "^50..")
+PORT="5000"
+IP="192.168.1.200"
+
+for PORT_USED in ${PORTS_USED[@]}
+do
+  PORT_NEXT=$(expr $PORT_USED + 1)
+  if ! nc -z localhost $PORT_NEXT ; then
+    PORT=$PORT_NEXT
+    break
+  fi
+done
+
+# Global variables and functions
+. ./global
+
+# PUSH event actions
+if [[ $EVENT -eq 'push' ]]; then
+    echo >> ${LOGFILE}
+    log "🍓 Start deploying repository"
+    log "🌱 EVENT : $EVENT"
+    log "🌱 NAME  : $NAME"
+    log "🌱 TYPE  : $TYPE"
+    log "🌱 REPO  : $REPO"
+    log "🌱 MAIL  : $MAIL"
+    log "🌱 USER  : $USER"
+
+    empty_previous ${NAME}
+    # Current Working Directory: /data/sites/${NAME}
+
+    log "📂 git clone started"
+    git clone --progress ${REPO} /data/sites/${NAME}/web &>> ${LOGFILE}
+    [ $? -ne 0 ] && exit
+
+    [ ! -d /data/sites/${NAME}/web ] && exit
+
+    log "📦 copy Dockerfile file & data directory"
+    cp -r /opt/gitea-cdci/type/Drupal/* /data/sites/${NAME}/
+    [ $? -ne 0 ] && exit
+
+    log "📦 copy database.sql to Dockerfile"
+    cp /home/${USER}/staging/${NAME}/database.sql /data/sites/${NAME}/data/database.sql -f 2>> ${LOGFILE}
+    [ $? -ne 0 ] && exit
+    
+    log "📦 copy settings.php to Dockerfile"
+    cp /home/${USER}/staging/${NAME}/settings.php /data/sites/${NAME}/data/settings.php -f 2>> ${LOGFILE}
+    [ $? -ne 0 ] && exit
+
+    log "🧊 Docker: removing ${B}cnt_${NAME}${E} and ${B}img_${NAME}${E}"
+    docker container stop cnt_${NAME} 2>> ${LOGFILE}
+    docker container rm cnt_${NAME} 2>> ${LOGFILE}
+    docker image rm img_${NAME} 2>> ${LOGFILE}
+
+    log "🧊 Docker: build image ${B}img_${NAME}${E}"
+    docker build . -t img_${NAME} 2>> ${LOGFILE}
+    [ $? -ne 0 ] && exit
+
+    log "🧊 Docker  : create container ${B}cnt_${NAME}${E}"
+    docker run -itd --restart unless-stopped -v ./data:/data -p ${PORT}:80 --name cnt_${NAME} img_${NAME} 2>> ${LOGFILE}
+   
+    log "🚀 URL     : ${G}http://${IP}:${PORT}${E}"
+    log "🔧 Logs    : ${W}docker container logs ${B}cnt_${NAME}${E}"
+    log "🔧 Attach  : ${W}docker container exec -it ${B}cnt_${NAME} bash${E}"
+
+fi
+    

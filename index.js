@@ -5,7 +5,6 @@ const fs = require('fs')
 const app = express()
 const PORT = 4444
 
-
 // logger
 function logger(msg) {
   const cmd = `/usr/bin/logger ${msg}`
@@ -14,13 +13,13 @@ function logger(msg) {
 
 // Execute a repo script
 function webhookHandler(params) {
-  const script = './repos/' + params.name
+  const script = './init.sh'
   try {
     if (fs.existsSync(script)) {
-      const cmd = `/bin/bash ${script} ${params.event} ${params.name} ${params.url} ${params.email}`
+      const cmd = `/bin/bash ${script} ${params.event} ${params.name} ${params.type} ${params.url} ${params.email} ${params.user}`
       exec(cmd)
     }
-  } catch(err) {
+  } catch (err) {
     logger.error(err)
   }
 }
@@ -31,8 +30,10 @@ app.post("/webhook", (req, res) => {
   var params = {
     event: req.headers['x-gitea-event'],
     name: req.body.repository.name,
-    url: req.body.repository.clone_url,
-    email: req.body.repository.owner.email
+    type: req.body.repository.description,
+    url: req.body.repository.ssh_url,
+    email: req.body.repository.owner.email,
+    user: req.body.pusher.username
   }
   logger(`🫖 gitea-cdci  ${JSON.stringify(params)}`)
   webhookHandler(params);
@@ -40,5 +41,5 @@ app.post("/webhook", (req, res) => {
 })
 
 // Start the server
-app.listen(PORT, () => logger(`🚀 gitea-cdci: start lisening on port ${PORT}`))
+app.listen(PORT, '0.0.0.0', () => logger(`🚀 gitea-cdci: start lisening on port ${PORT}`))
 

@@ -1,0 +1,57 @@
+R="\e[0;31m"
+G="\e[0;32m"
+B="\e[0;34m"
+W="\e[0;97m"
+BR="\e[1;31m"
+BG="\e[1;32m"
+BB="\e[1;34m"
+BW="\e[1;97m"
+E="\e[00m"
+
+# Where the log file is created
+#
+LOGFILE="/var/log/gitea-cdci/${NAME}.log"
+#
+# Write with time stamp to log file and std output
+# Example:
+#
+#  log "🧊 Docker: removing ${B}cnt_${NAME}${E} and ${B}img_${NAME}${E}"
+#
+function log() {
+    echo -e "\e[96m`date +'%d/%m/%Y %H:%M:%S'`\e[39m $1"
+    echo -e "`date +'%d/%m/%Y %H:%M:%S'` $1" >> $LOGFILE
+}
+
+# Where the specific site are hosted
+#
+DESTINATION="/opt/docker-nginx-proxy-letsencrypt-static/sites/${NAME}/web"
+
+
+# Clear all directories and log files
+# Be extra caredfull with the cd commands, thus is change the PWD and may effect your code in the repo scripts when you are not using full paths
+function empty_previous() {
+    DIR=$1
+    cd /data/sites/
+    if [ -d ${DIR} ]
+    then
+        rm -rf $DIR && log "📂 Directory /data/sites/$DIR deleted"
+    else
+        log "📂 Directory $DIR not found"
+    fi
+    mkdir ${DIR} && log "📂 Directory $DIR created"
+    cd ${DIR}
+}
+
+# Restart docker
+function after_all(){
+    NAME=$1
+    docker restart ${NAME}
+}
+
+# send the log file to the owners email
+function send_mail(){
+    NAME=$1
+    RECIPIENT=$2
+    cat $LOGFILE | mutt -F ./muttrc -s ${NAME} ${RECIPIENT}
+}
+

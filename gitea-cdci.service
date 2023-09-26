@@ -5,7 +5,7 @@ After=default.target
  
 [Service]
 ExecStart=/usr/bin/node index.js
-WorkingDirectory=/opt/gitea
+WorkingDirectory=/opt/gitea-cdci
 User=root
  
 [Install]
